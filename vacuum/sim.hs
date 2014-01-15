@@ -7,16 +7,16 @@ import Data.List (find)
 data Direction = U | R | D | L deriving (Show, Eq, Ord, Enum, Bounded)
 data Action = Go Direction | Suck deriving (Show, Eq)
 
+randomChoice :: (RandomGen g) => [a] -> g -> (a, g)
+randomChoice xs gen = (xs !! n, newgen)
+  where (n, newgen) = randomR (0, length xs - 1) gen
+
 instance Random Direction where
-  randomR (lo, hi) gen = ([lo..hi] !! n, newgen)
-    where (n, newgen) = randomR (0, length [lo..hi] - 1) gen
-  random gen = ([minBound..maxBound] !! n, newgen)
-    where (n, newgen) = randomR (0, 3) gen
+  randomR (lo, hi) = randomChoice [lo..hi]
+  random = randomChoice [minBound..maxBound]
 
 type MapFunc a = a -> Direction -> a
 data State a b = State { getLocation :: a, getDirt :: (Set a), getMem :: b, getScore :: Int } deriving (Show, Eq)
-
-data SimpleWorld = LeftSquare | RightSquare deriving (Show, Eq, Ord)
 
 data Strategy a b = Strategy { decide :: b -> a -> Bool -> (Action, b),
                                initialmem :: b }
@@ -55,6 +55,8 @@ cartesian xs ys = do
   return (x, y)
 
 -- simple world
+data SimpleWorld = LeftSquare | RightSquare deriving (Show, Eq, Ord)
+
 simpleGo :: MapFunc SimpleWorld
 simpleGo _ R = RightSquare
 simpleGo _ L = LeftSquare
@@ -151,14 +153,14 @@ main = do
   let env = Environment { godir = miniGo,
                           scoreState = (\state -> -(Set.size (getDirt state))),
                           scoreAction = const 0 }
-  let strat = cleverStrategy
-  let squares = filter (\(x,y) -> minimap!!y!!x == '.') $ cartesian [0..length (head minimap) - 1] [0..length minimap - 1]
+  let strategy = cleverStrategy
+  let squares = filter isclear $ cartesian [0..length (head minimap) - 1] [0..length minimap - 1]
   forM_
     (cartesian ([squares]) squares)
     (\(dirt, loc) -> do
-        let initial = (State loc (Set.fromList dirt) (initialmem strat) 0)
+        let initial = (State loc (Set.fromList dirt) (initialmem strategy) 0)
         print initial
-        print (simulate env initial strat))
+        print (simulate env initial strategy))
   -- let env = Environment { godir = simpleGo,
   --                         scoreState = (\state -> -(Set.size (getDirt state))),
   --                         scoreAction = penalizeMotion }
