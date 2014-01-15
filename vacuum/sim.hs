@@ -40,6 +40,9 @@ stepState env state@(State location dirt mem score) strategy =
 simulate :: (Ord a) => Environment a b -> (State a b) -> (Strategy a b) -> Int
 simulate env initial strategy = getScore $ (iterate (\state -> stepState env state strategy) initial) !! 1000
 
+dsimulate :: (Ord a, Show a, Show b) => Environment a b -> (State a b) -> (Strategy a b) -> IO ()
+dsimulate env initial strategy = mapM_ print $ take 100 (iterate (\state -> stepState env state strategy) initial)
+
 -- utilities
 powerList :: [a] -> [[a]]
 powerList = filterM (const [True, False])
