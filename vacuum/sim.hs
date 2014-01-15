@@ -2,8 +2,9 @@ import System.Random (Random, StdGen, RandomGen, random, randomR, mkStdGen)
 import Control.Monad (filterM, forM_)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.List (find)
 
-data Direction = R | U | L | D deriving (Show, Eq, Ord, Enum, Bounded)
+data Direction = U | R | D | L deriving (Show, Eq, Ord, Enum, Bounded)
 data Action = Go Direction | Suck deriving (Show, Eq)
 
 instance Random Direction where
@@ -103,12 +104,54 @@ penalizeMotion :: Action -> Int
 penalizeMotion (Go _) = -1
 penalizeMotion Suck = 0
 
+-- stateful searching strategy
+
+leftof :: Direction -> Direction
+leftof U = L
+leftof R = U
+leftof D = R
+leftof L = D
+revof :: Direction -> Direction
+revof = leftof . leftof
+rightof :: Direction -> Direction
+rightof = leftof . leftof . leftof
+todx :: Direction -> (Int, Int)
+todx U = (0, -1)
+todx R = (1, 0)
+todx D = (0, 1)
+todx L = (-1, 0)
+
+stepdir :: Direction -> (Int, Int) -> (Int, Int)
+stepdir d (x,y) = let (dx, dy) = todx d in (x+dx, y+dy)
+
+cleverStrategy :: Strategy (Int,Int) ([Direction], Maybe (Int, Int), Set (Int,Int))
+cleverStrategy = Strategy cleverDecide cleverMem
+cleverDecide (stack, prev, visited) loc True = (Suck, (stack, prev, visited))
+cleverDecide (stack, prev, visited) loc False = case viable newvisit of
+                                                    Just d -> (Go d, (d:newstack, Just loc, newvisit))
+                                                    Nothing -> if null newstack then
+                                                                 (Suck,
+                                                                  (newstack, Nothing, newvisit))
+                                                               else
+                                                                 (Go (revof (head newstack)),
+                                                                  (tail newstack, Nothing, newvisit))
+  where
+    viable :: Set (Int,Int) -> Maybe Direction
+    viable vis = find (\d -> not (Set.member (stepdir d loc) vis)) [minBound..maxBound]
+    newvisit1 = Set.insert loc visited
+    (newstack, newvisit) = if not (null stack) && prev == Just loc then
+                             (tail stack, Set.insert (stepdir (head stack) loc) newvisit1)
+                           else
+                             (stack, newvisit1)
+
+cleverMem = ([], Nothing, Set.empty)
+
 main :: IO ()
 main = do
   let env = Environment { godir = miniGo,
                           scoreState = (\state -> -(Set.size (getDirt state))),
                           scoreAction = const 0 }
-  let strat = stochStrategy --statelessStrategy unknownStrategy
+  let strat = cleverStrategy
   let squares = filter (\(x,y) -> minimap!!y!!x == '.') $ cartesian [0..length (head minimap) - 1] [0..length minimap - 1]
   forM_
     (cartesian ([squares]) squares)
