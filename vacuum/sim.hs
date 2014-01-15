@@ -75,8 +75,9 @@ memStrategy = Strategy { decide = memDecide, initialmem = Set.empty }
 -- unknown map world
 minimap :: [String]
 minimap = [
-  ".oo.",
-  "...."
+  ".oooo..o",
+  "..oo....",
+  "o....oo."
   ]
 
 isclear :: (Int, Int) -> Bool
