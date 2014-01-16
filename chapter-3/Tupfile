@@ -1,0 +1,2 @@
+: foreach *.hs |> ghc --make -o %o %f ; rm -f %B.hi %B.o |> %B
+.gitignore
