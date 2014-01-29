@@ -1,29 +1,40 @@
 import Geometry
+import Problem (Problem (..), Solution (..))
 import Data.Ratio (Rational)
-import qualified Data.Set as Set
-import Data.Set (Set)
-import qualified Data.Sequence as Seq
-import Data.Sequence (Seq, (><))
+import System.Random (RandomGen, randomR, mkStdGen)
 
-seqtail = Seq.drop 1
-seqhead = (flip Seq.index) 0
+-- import Graphics.Rendering.OpenGL
+import qualified Graphics.Rendering.OpenGL as GL
+import qualified Graphics.UI.GLUT as GLUT
+import Graphics.UI.GLUT (($=), GLfloat)
+
+import qualified BreadthFirst
+import qualified UniformCost
+
+-----  Polygons world state space -----
 
 type PolySpace = Rational
 type PolyState = Vertex PolySpace
 type PolyAction = (PolyState, PolyState)
 
+triangle :: (Num a) => a -> a -> a -> Polygon a
+triangle x y w = [(x+w,y-w),(x,y+w),(x-w,y-w)]
+
+randomTriangle :: (RandomGen g, Num a) => g -> (Polygon a, g)
+randomTriangle gen = (triangle (fromInteger x) (fromInteger y) 20, gen'')
+    where (x, gen') = randomR (0,400) gen
+          (y, gen'') = randomR (100,300) gen'
+
 terrain :: [Polygon PolySpace]
-terrain = [[(1,0),(1,1),(0,1)]]
+terrain = fst $ foldl (\(xs, gen) _ -> let (t,g) = randomTriangle gen in (t:xs, g)) ([], mkStdGen 7) [1..30]
 
 polystart :: PolyState
-polystart = (0,0)
+polystart = (0,200)
 polygoal :: PolyState
-polygoal = (2,2)
+polygoal = (400,200)
 
 polycost :: PolyState -> PolyAction -> Double
-polycost _ _ = 1
-
--- cost ((x0,y0),(x1,y1)) = sqrt . fromRational $ (x1-x0)^2 + (y1-y0)^2
+polycost _ ((x0,y0),(x1,y1)) = sqrt . fromRational $ (x1-x0)^2 + (y1-y0)^2
 
 polyActions :: PolyState -> [PolyAction]
 polyActions st = filter legal [(st,next) | next <- polygoal:(concat terrain), st /= next]
@@ -32,42 +43,7 @@ polyActions st = filter legal [(st,next) | next <- polygoal:(concat terrain), st
 polymove :: PolyState -> PolyAction -> PolyState
 polymove _ (_,s) = s
 
-
------- Solving Machinery ------
-
-data Problem a s = Problem { initial :: s,
-                             actions :: s -> [a],
-                             result :: s -> a -> s,
-                             goal :: s -> Bool,
-                             cost :: s -> a -> Double }
-
-data Node a s = Node { getActions :: [a], getState :: s }
-
-isgoalnode :: Problem a s -> Node a s -> Bool
-isgoalnode problem (Node _ s) = goal problem s
-movenode :: Problem a s -> Node a s -> a -> Node a s
-movenode problem (Node as s) action = Node (action:as) (result problem s action)
-
-type Frontier a s = Seq (Node a s)
-type Closed s = Set s
-type Solution a = [a]
-search' :: (Ord s) => Problem a s -> Frontier a s -> Closed s -> Maybe (Solution a)
-search' problem frontier closed = if Seq.null frontier then
-                                      Nothing
-                                  else
-                                      let frontier' = seqtail frontier
-                                          top = seqhead frontier
-                                      in if isgoalnode problem top then
-                                             Just $ getActions top
-                                         else
-                                             let closed' = Set.insert (getState top) closed
-                                                 tovisit = filter (not . ((flip Set.member) closed') . getState . (movenode problem top)) (actions problem (getState top))
-                                                 frontier'' = frontier' >< (Seq.fromList $ map (movenode problem top) tovisit)
-                                             in search' problem frontier'' closed'
-
-search :: (Ord s) => Problem a s -> Maybe (Solution a)
-search problem = search' problem (Seq.singleton (Node [] (initial problem))) (Set.empty)
-
+--- solve it ---
 
 prob :: Problem PolyAction PolyState
 prob = Problem { initial = polystart,
@@ -76,6 +52,49 @@ prob = Problem { initial = polystart,
                  goal = (==polygoal),
                  cost = polycost }
 
+getPath :: Problem a s -> Solution a s -> [s]
+getPath problem sol = scanl (result problem) (initial problem) (reverse $ getActions sol)
+
 main :: IO ()
 main = do
-  print $ search prob
+  print terrain
+  let bsol = BreadthFirst.search prob
+      usol = UniformCost.search prob
+  case bsol of
+    Just solution -> print (getPath prob solution)
+    Nothing -> putStrLn "No solutions found"
+  case usol of
+    Just solution -> print (getPath prob solution)
+    Nothing -> putStrLn "No solutions found"
+
+  (progname, _) <- GLUT.getArgsAndInitialize
+  GLUT.createWindow "Hello World"
+  GLUT.displayCallback $= display bsol usol
+  GLUT.mainLoop
+
+type GLVertex = (GLfloat,GLfloat,GLfloat)
+
+spaceToGL :: (PolySpace, PolySpace) -> GLVertex
+spaceToGL (x,y) = (fromRational (x-200)/200,fromRational (y-200)/200,0)
+
+myPoints :: [GLVertex]
+myPoints = concat $ map (map spaceToGL) terrain
+
+pushVertex :: GLVertex -> IO ()
+pushVertex (x,y,z) = GLUT.vertex $ GL.Vertex3 x y z
+
+display sol1 sol2 = do
+  GL.clear [GL.ColorBuffer]
+  GL.renderPrimitive GL.Triangles $ mapM_ pushVertex myPoints
+  GL.renderPrimitive GL.LineLoop $ mapM_ pushVertex [(-1,-1,0),(1,-1,0),(1,1,0),(-1,1,0)]
+  case sol1 of
+    Just solution -> GL.renderPrimitive GL.LineStrip $ do
+                       GLUT.color $ (GL.Color3 (1.0::GLfloat) 0 0)
+                       mapM_ (pushVertex . spaceToGL) (getPath prob solution)
+    Nothing -> return ()
+  case sol2 of
+    Just solution -> GL.renderPrimitive GL.LineStrip $ do
+                       GLUT.color $ (GL.Color3 0 0 (1.0::GLfloat))
+                       mapM_ (pushVertex . spaceToGL) (getPath prob solution)
+    Nothing -> return ()
+  GL.flush

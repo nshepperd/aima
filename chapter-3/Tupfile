@@ -1,3 +1,6 @@
 include_rules
 : Geometry.hs |> ghc %f |> %B.hi %B.o {geometry}
-: solve.hs | {geometry} |> ghc -o %o %f ; rm -f %B.hi %B.o |> %B
+: Problem.hs |> ghc %f |> %B.hi %B.o {problem}
+: UniformCost.hs | {problem} |> ghc %f |> %B.hi %B.o {uniformcost}
+: BreadthFirst.hs | {problem} |> ghc %f |> %B.hi %B.o {bfs}
+: solve.hs | {geometry} {problem} {bfs} {uniformcost} |> ghc -o %o %f ; rm -f %B.hi %B.o |> %B
