@@ -10,6 +10,7 @@ import Graphics.UI.GLUT (($=), GLfloat)
 
 import qualified BreadthFirst
 import qualified UniformCost
+import qualified AStar
 
 -----  Polygons world state space -----
 
@@ -22,11 +23,11 @@ triangle x y w = [(x+w,y-w),(x,y+w),(x-w,y-w)]
 
 randomTriangle :: (RandomGen g, Num a) => g -> (Polygon a, g)
 randomTriangle gen = (triangle (fromInteger x) (fromInteger y) 20, gen'')
-    where (x, gen') = randomR (0,400) gen
-          (y, gen'') = randomR (100,300) gen'
+    where (x, gen') = randomR (100,300) gen
+          (y, gen'') = randomR (0,400) gen'
 
 terrain :: [Polygon PolySpace]
-terrain = fst $ foldl (\(xs, gen) _ -> let (t,g) = randomTriangle gen in (t:xs, g)) ([], mkStdGen 7) [1..30]
+terrain = fst $ foldl (\(xs, gen) _ -> let (t,g) = randomTriangle gen in (t:xs, g)) ([], mkStdGen 6) [1..100]
 
 polystart :: PolyState
 polystart = (0,200)
@@ -55,21 +56,20 @@ prob = Problem { initial = polystart,
 getPath :: Problem a s -> Solution a s -> [s]
 getPath problem sol = scanl (result problem) (initial problem) (reverse $ getActions sol)
 
+heuristic :: PolyState -> Double
+heuristic s = polycost s (s,polygoal)
+
 main :: IO ()
 main = do
   print terrain
-  let bsol = BreadthFirst.search prob
-      usol = UniformCost.search prob
-  case bsol of
-    Just solution -> print (getPath prob solution)
-    Nothing -> putStrLn "No solutions found"
-  case usol of
+  let sol = AStar.search prob heuristic
+  case sol of
     Just solution -> print (getPath prob solution)
     Nothing -> putStrLn "No solutions found"
 
   (progname, _) <- GLUT.getArgsAndInitialize
   GLUT.createWindow "Hello World"
-  GLUT.displayCallback $= display bsol usol
+  GLUT.displayCallback $= display sol
   GLUT.mainLoop
 
 type GLVertex = (GLfloat,GLfloat,GLfloat)
@@ -83,18 +83,13 @@ myPoints = concat $ map (map spaceToGL) terrain
 pushVertex :: GLVertex -> IO ()
 pushVertex (x,y,z) = GLUT.vertex $ GL.Vertex3 x y z
 
-display sol1 sol2 = do
+display sol = do
   GL.clear [GL.ColorBuffer]
   GL.renderPrimitive GL.Triangles $ mapM_ pushVertex myPoints
   GL.renderPrimitive GL.LineLoop $ mapM_ pushVertex [(-1,-1,0),(1,-1,0),(1,1,0),(-1,1,0)]
-  case sol1 of
+  case sol of
     Just solution -> GL.renderPrimitive GL.LineStrip $ do
                        GLUT.color $ (GL.Color3 (1.0::GLfloat) 0 0)
-                       mapM_ (pushVertex . spaceToGL) (getPath prob solution)
-    Nothing -> return ()
-  case sol2 of
-    Just solution -> GL.renderPrimitive GL.LineStrip $ do
-                       GLUT.color $ (GL.Color3 0 0 (1.0::GLfloat))
                        mapM_ (pushVertex . spaceToGL) (getPath prob solution)
     Nothing -> return ()
   GL.flush

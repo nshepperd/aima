@@ -3,4 +3,5 @@ include_rules
 : Problem.hs |> ghc %f |> %B.hi %B.o {problem}
 : UniformCost.hs | {problem} |> ghc %f |> %B.hi %B.o {uniformcost}
 : BreadthFirst.hs | {problem} |> ghc %f |> %B.hi %B.o {bfs}
-: solve.hs | {geometry} {problem} {bfs} {uniformcost} |> ghc -o %o %f ; rm -f %B.hi %B.o |> %B
+: AStar.hs | {problem} |> ghc %f |> %B.hi %B.o {astar}
+: solve.hs | {geometry} {problem} {bfs} {uniformcost} {astar} |> ghc -o %o %f ; rm -f %B.hi %B.o |> %B
