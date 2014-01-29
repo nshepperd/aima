@@ -1,7 +1,8 @@
 include_rules
-: Geometry.hs |> ghc %f |> %B.hi %B.o {geometry}
-: Problem.hs |> ghc %f |> %B.hi %B.o {problem}
-: UniformCost.hs | {problem} |> ghc %f |> %B.hi %B.o {uniformcost}
-: BreadthFirst.hs | {problem} |> ghc %f |> %B.hi %B.o {bfs}
-: AStar.hs | {problem} |> ghc %f |> %B.hi %B.o {astar}
-: solve.hs | {geometry} {problem} {bfs} {uniformcost} {astar} |> ghc -o %o %f ; rm -f %B.hi %B.o |> %B
+GFLAGS=-O2
+: Geometry.hs |> ghc $(GFLAGS) %f |> %B.hi %B.o {geometry}
+: Problem.hs |> ghc $(GFLAGS) %f |> %B.hi %B.o {problem}
+: UniformCost.hs | {problem} |> ghc $(GFLAGS) %f |> %B.hi %B.o {uniformcost}
+: BreadthFirst.hs | {problem} |> ghc $(GFLAGS) %f |> %B.hi %B.o {bfs}
+: AStar.hs | {problem} |> ghc $(GFLAGS) %f |> %B.hi %B.o {astar}
+: solve.hs | {geometry} {problem} {bfs} {uniformcost} {astar} |> ghc $(GFLAGS) -o %o %f ; rm -f %B.hi %B.o |> %B
