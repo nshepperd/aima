@@ -1,8 +1,6 @@
 include_rules
 GFLAGS=-O2
-: Geometry.hs |> ghc $(GFLAGS) %f |> %B.hi %B.o {geometry}
-: Problem.hs |> ghc $(GFLAGS) %f |> %B.hi %B.o {problem}
-: UniformCost.hs | {problem} |> ghc $(GFLAGS) %f |> %B.hi %B.o {uniformcost}
-: BreadthFirst.hs | {problem} |> ghc $(GFLAGS) %f |> %B.hi %B.o {bfs}
-: AStar.hs | {problem} |> ghc $(GFLAGS) %f |> %B.hi %B.o {astar}
-: solve.hs | {geometry} {problem} {bfs} {uniformcost} {astar} |> ghc $(GFLAGS) -o %o %f ; rm -f %B.hi %B.o |> %B
+LIBS=-package containers -package OpenGL -package GLUT -package queuelike -package random
+
+run $(HCC) *.hs
+: *.o |> !ghc $(LIBS) |> solve
