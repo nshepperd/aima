@@ -1,6 +1,5 @@
 include_rules
-GFLAGS=-O2
-LIBS=-package containers -package OpenGL -package GLUT -package queuelike -package random
+LIBS=-package containers -package OpenGL -package GLUT -package pqueue -package random
 
 run $(HCC) *.hs
 : *.o |> !ghc $(LIBS) |> solve

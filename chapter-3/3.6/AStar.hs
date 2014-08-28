@@ -2,12 +2,12 @@ module AStar (search) where
 import Problem (Problem (..), Solution (Solution))
 import qualified Data.Set as Set
 import Data.Set (Set)
-import qualified Data.Queue.Class as Q
-import Data.Queue.PQueue (PQueue)
+import Data.Monoid
 
-import Debug.Trace (traceShow)
+import Data.PQueue.Min (MinQueue)
+import qualified Data.PQueue.Min as Q
 
-data Node a s = Node { getActions :: [a],
+data Node a s = Node { _getActions :: [a],
                        getState :: s,
                        getCost :: Double,
                        getHeuristic :: Double} deriving (Show, Eq)
@@ -27,10 +27,10 @@ unvisited problem closed state = filter (not . (flip Set.member closed) . (resul
 search :: (Eq a, Ord s, Show a, Show s) => Problem a s -> Heuristic s -> Maybe (Solution a s)
 search problem h = search' problem h (Q.singleton (Node [] (initial problem) 0 (h $ initial problem))) (Set.empty)
 
-type Frontier a s = PQueue (Node a s)
+type Frontier a s = MinQueue (Node a s)
 type Closed s = Set s
 search' :: (Eq a, Ord s, Show a, Show s) => Problem a s -> Heuristic s -> Frontier a s -> Closed s -> Maybe (Solution a s)
-search' problem h frontier closed = case Q.extract frontier of
+search' problem h frontier closed = case Q.minView frontier of
                                       Just (top, frontier') ->
                                           if goal problem (getState top) then
                                               Just $ case top of { Node a s c _ -> Solution a s c }
@@ -38,7 +38,7 @@ search' problem h frontier closed = case Q.extract frontier of
                                                    let closed' = Set.insert (getState top) closed
                                                        tovisit = unvisited problem closed' (getState top)
                                                        nodes = map (movenode problem h top) tovisit
-                                                       frontier'' = Q.insertAll nodes frontier'
+                                                       frontier'' = frontier' <> Q.fromList nodes
                                                    in search' problem h frontier'' closed'
                                                else
                                                    search' problem h frontier' closed
