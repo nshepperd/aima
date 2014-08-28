@@ -20,12 +20,12 @@ movenode problem (Node as s c) action = Node (action:as) (result problem s actio
 unvisited :: (Ord s) => Problem a s -> Set s -> s -> [a]
 unvisited problem closed state = filter (not . (flip Set.member closed) . (result problem state)) (actions problem state)
 
-search :: (Eq a, Ord s, Show a, Show s) => Problem a s -> Maybe (Solution a s)
+search :: (Eq a, Ord s) => Problem a s -> Maybe (Solution a s)
 search problem = search' problem (Q.singleton (Node [] (initial problem) 0)) (Set.empty)
 
 type Frontier a s = MinQueue (Node a s)
 type Closed s = Set s
-search' :: (Eq a, Ord s, Show a, Show s) => Problem a s -> Frontier a s -> Closed s -> Maybe (Solution a s)
+search' :: (Eq a, Ord s) => Problem a s -> Frontier a s -> Closed s -> Maybe (Solution a s)
 search' problem frontier closed = case Q.minView frontier of
                                     Just (top, frontier') ->
                                         if goal problem (getState top) then

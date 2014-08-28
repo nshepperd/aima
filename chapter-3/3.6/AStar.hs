@@ -24,12 +24,12 @@ movenode problem h (Node as s c _) action = let newstate = result problem s acti
 unvisited :: (Ord s) => Problem a s -> Set s -> s -> [a]
 unvisited problem closed state = filter (not . (flip Set.member closed) . (result problem state)) (actions problem state)
 
-search :: (Eq a, Ord s, Show a, Show s) => Problem a s -> Heuristic s -> Maybe (Solution a s)
+search :: (Eq a, Ord s) => Problem a s -> Heuristic s -> Maybe (Solution a s)
 search problem h = search' problem h (Q.singleton (Node [] (initial problem) 0 (h $ initial problem))) (Set.empty)
 
 type Frontier a s = MinQueue (Node a s)
 type Closed s = Set s
-search' :: (Eq a, Ord s, Show a, Show s) => Problem a s -> Heuristic s -> Frontier a s -> Closed s -> Maybe (Solution a s)
+search' :: (Eq a, Ord s) => Problem a s -> Heuristic s -> Frontier a s -> Closed s -> Maybe (Solution a s)
 search' problem h frontier closed = case Q.minView frontier of
                                       Just (top, frontier') ->
                                           if goal problem (getState top) then
