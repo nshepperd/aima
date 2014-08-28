@@ -1,0 +1,5 @@
+HCC=$(TUP_CWD)/hcc
+GHC_PACKAGE_PATH=`echo $(TUP_CWD)/sandbox/*-packages.conf.d`:`echo /usr/lib/ghc-*/package.conf.d`
+SANDBOX_GHC=GHC_PACKAGE_PATH=$(GHC_PACKAGE_PATH) ghc
+!ghc = |> ^o LINK %o^ $(SANDBOX_GHC) -O -o %o %f |>
+!ghcc = |> ^o GHC %B.o^ $(SANDBOX_GHC) -O -c $(GFLAGS) %f |> %B.hi %B.o

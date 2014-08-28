@@ -1,4 +1,2 @@
-HCC=$(TUP_CWD)/hcc
-!ghc = |> ^ LINK %o^ ghc -o %o %f |>
-!ghcc = |> ^ GHC %B.o^ ghc -c $(GFLAGS) %f |> %B.hi %B.o
+include rules
 .gitignore
