@@ -1,5 +1,0 @@
-include_rules
-LIBS=-package containers -package OpenGL -package GLUT -package pqueue -package random
-
-run $(HCC) *.hs
-: *.o |> !ghc $(LIBS) |> solve

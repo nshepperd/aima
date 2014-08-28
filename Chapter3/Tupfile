@@ -1,0 +1,5 @@
+include_rules
+LIBS=-package containers -package GLUT -package pqueue -package MonadRandom
+
+run $(HCC) *.hs
+: *.o |> !ghc $(LIBS) |> solve

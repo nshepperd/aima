@@ -1,15 +1,16 @@
-module BreadthFirst (search) where
-import Problem (Problem (..), Solution (Solution))
+module Chapter3.BreadthFirst (search) where
 
+import           Chapter3.Problem (Problem (..), Solution (Solution))
+
+import           Data.Set (Set)
 import qualified Data.Set as Set
-import Data.Set (Set)
 
-import Data.Sequence (Seq, ViewL(..), (><))
+import           Data.Sequence (Seq, ViewL (..), (><))
 import qualified Data.Sequence as Seq
 
 data Node a s = Node { _getActions :: [a],
-                       getState :: s,
-                       _getCost :: Double }
+                       getState    :: s,
+                       _getCost    :: Double }
 
 movenode :: Problem a s -> Node a s -> a -> Node a s
 movenode problem (Node as s c) action = Node (action:as) (result problem s action) (c + cost problem s action)

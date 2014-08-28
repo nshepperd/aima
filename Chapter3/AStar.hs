@@ -1,15 +1,17 @@
-module AStar (search) where
-import Problem (Problem (..), Solution (Solution))
-import qualified Data.Set as Set
-import Data.Set (Set)
-import Data.Monoid
+module Chapter3.AStar (search) where
 
-import Data.PQueue.Min (MinQueue)
+import           Chapter3.Problem (Problem (..), Solution (Solution))
+
+import           Data.Monoid
+import           Data.Set (Set)
+import qualified Data.Set as Set
+
+import           Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as Q
 
-data Node a s = Node { _getActions :: [a],
-                       getState :: s,
-                       getCost :: Double,
+data Node a s = Node { _getActions  :: [a],
+                       getState     :: s,
+                       getCost      :: Double,
                        getHeuristic :: Double} deriving (Show, Eq)
 
 instance (Eq a, Eq s) => Ord (Node a s) where
